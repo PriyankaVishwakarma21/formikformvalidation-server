@@ -1,0 +1,55 @@
+const { models, model } = require('express');
+const router = require('express').Router()
+const Register = require('../models/RegisterModel');
+// const {generateAuthToken} = require('../models/RegisterModel');
+//const validate = require('../models/RegisterModel');
+const { createToken } = require('../authenticate');
+const cookieParser = require('cookie-parser');
+const {Cookies} = require('react-cookie');
+
+
+
+module.exports.saveRegister = async (req, res) => {
+    try {
+        console.log("save reister");
+        console.log(req.body);
+        const register = await Register.findOne({ email: req.body.email });
+        console.log(register);
+        if (register) {
+            return res.status(400).send("User is already registered...");
+        }
+
+        await new Register({ ...req.body }).save();
+        res.status(200).send("successfully registerd");
+    }
+    catch (err) {
+        console.log(err);
+    }
+}
+
+module.exports.auth = async (req, res) => {
+    try {
+        console.log("server auth...");
+        const register = await new Register({ email: req.body.email });
+        console.log(register);
+        if (!register) {
+            return res.status(401).send("invalid email or password")
+        }
+        else {
+            console.log('Reached hereeeeeeeeeeeeeeee-------------')
+            const Token = await createToken(register);
+            console.log(`Token Received ${Token}`);
+        return res.cookie("jwt", Token, { maxAge: 60 * 60 * 24 * 30 * 1000 ,domain:process.env.DOMAIN,secure:false}).json({"Token": 'Your token here'});
+        }
+    } catch (err) {
+        console.log(err);
+    }
+}
+
+module.exports.welcome = (req, res, next) => {
+    console.log("welcome route");
+    res.json("welcome page");
+    return next();
+}
+
+
